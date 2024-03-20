@@ -16,8 +16,12 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QLineEdit,
     QComboBox,
+    QFileDialog,
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QRegularExpression
+from PySide6.QtGui import QRegularExpressionValidator, QAction
+
+from contacto import Contacto
 
 
 class VentanaPrincipal(QMainWindow):
@@ -29,12 +33,23 @@ class VentanaPrincipal(QMainWindow):
         self.setWindowTitle("Agenda")
 
         self.setCentralWidget(centralWidget)
+        self.setMinimumSize(500, 600)
+
+        # Actions
+
+        importAction = QAction("&Importar", self)
+        importAction.setShortcut("Ctrl+I")
+        importAction.triggered.connect(self.importarDatos)
+
+        exportAction = QAction("&Exportar", self)
+        exportAction.setShortcut("Ctrl+E")
+        exportAction.triggered.connect(self.exportarDatos)
 
         # Components
         menuBar = QMenuBar(self)
         menuItemDatos = QMenu("&Datos")
-        menuItemDatos.addAction("&Importar", self.importarDatos)
-        menuItemDatos.addAction("&Exportar", self.exportarDatos)
+        menuItemDatos.addAction(importAction)
+        menuItemDatos.addAction(exportAction)
         menuItemAyuda = QMenu("&Ayuda")
         menuItemAyuda.addAction("&Acerca de...", self.abrirAcerca)
 
@@ -44,7 +59,19 @@ class VentanaPrincipal(QMainWindow):
         self.setMenuBar(menuBar)
 
     def importarDatos(self):
-        print("Importar")
+        dialogo = QFileDialog(self)
+        dialogo.setFileMode(QFileDialog.FileMode.ExistingFile)
+        dialogo.setNameFilter("Contactos separados por comas (*.csv)")
+        dialogo.setViewMode(QFileDialog.ViewMode.List)
+
+        if dialogo.exec():
+            archivo = dialogo.selectedFiles()[0]
+            if archivo.endswith(".csv"):
+                self.read_csv(archivo)
+            elif archivo.endswith(".xls") or archivo.endswith(".xlsx"):
+                self.read_excel(archivo)
+            else:
+                QMessageBox.warning(self, "Error", "Unsupported file type.")
 
     def exportarDatos(self):
         print("Exportar")
@@ -53,6 +80,26 @@ class VentanaPrincipal(QMainWindow):
         QMessageBox.information(
             self, "Acerca de", "<p>Hecho por EOBL.</p><p>Materia de TAP.</p>"
         )
+
+    def read_csv(self, archivo):
+        try:
+            f = open(archivo, "r")
+            linea = ""
+            while linea != "":
+                linea = f.readline()
+                print(linea)
+
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Error reading CSV: {e}")
+
+    def read_excel(self, archivo):
+        pass
+        # try:
+        #     df = pd.read_excel(archivo)
+        #     for index, row in df.iterrows():
+        #         print(row)  # Process each line here
+        # except Exception as e:
+        #     QMessageBox.warning(self, "Error", f"Error reading Excel: {e}")
 
 
 class Tabla(QWidget):
@@ -70,14 +117,13 @@ class Tabla(QWidget):
         addBtn = QPushButton("Añadir")
         self.deleteBtn = QPushButton("Eliminar")
 
-        addBtn.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.deleteBtn.setSizePolicy(
-            QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding
-        )
-
         # Layouts
         mainLayout = QVBoxLayout(self)
         mainLayout.addWidget(self.tabla)
+
+        self.tabla.setColumnWidth(0, 240)
+        self.tabla.setColumnWidth(1, 120)
+        self.tabla.setColumnWidth(2, 50)
 
         # Botones layout
         btnLayout = QHBoxLayout()
@@ -86,29 +132,7 @@ class Tabla(QWidget):
 
         mainLayout.addLayout(btnLayout)
 
-        contactos = [
-            {
-                "paterno": "Quiñónez",
-                "materno": "Ramos",
-                "nombres": "Edgar Felipe",
-                "telefono": "6271094756",
-                "sexo": "M",
-            },
-            {
-                "paterno": "Quiñónez",
-                "materno": "Ramos",
-                "nombres": "Edgar Felipe",
-                "telefono": "6271094756",
-                "sexo": "M",
-            },
-            {
-                "paterno": "Quiñónez",
-                "materno": "Ramos",
-                "nombres": "Edgar Felipe",
-                "telefono": "6271094756",
-                "sexo": "M",
-            },
-        ]
+        contactos = []
 
         self.cargarContactos(contactos)
 
@@ -127,12 +151,7 @@ class Tabla(QWidget):
         numRows = self.tabla.rowCount()
         self.tabla.setRowCount(numRows + 1)
 
-        nombreCompleto = (
-            f"{formData['nombres']} {formData['paterno']} {formData['materno']}"
-        )
-        print(formData)
-
-        self.tabla.setItem(numRows, 0, QTableWidgetItem(nombreCompleto))
+        self.tabla.setItem(numRows, 0, QTableWidgetItem(formData["nombreCompleto"]))
         self.tabla.setItem(numRows, 1, QTableWidgetItem(formData["telefono"]))
         self.tabla.setItem(numRows, 2, QTableWidgetItem(formData["sexo"]))
 
@@ -204,7 +223,7 @@ class FrmAgregar(QDialog):
         self.comboBoxSexo = QComboBox()
         self.comboBoxSexo.addItem("Masculino")
         self.comboBoxSexo.addItem("Femenino")
-        self.comboBoxSexo.setPlaceholderText("--Selecionar--")
+        self.comboBoxSexo.setPlaceholderText("--Seleccionar--")
         self.comboBoxSexo.setCurrentIndex(-1)
 
         self.btnAceptar = QPushButton("Aceptar")
@@ -230,6 +249,22 @@ class FrmAgregar(QDialog):
         # Listeners
         self.btnAceptar.clicked.connect(lambda: self.handleAgregar(parent))
         self.btnCancelar.clicked.connect(lambda: self.reject())
+
+        # Regex
+        textRegex = QRegularExpression("[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s]+")
+        textValidator = QRegularExpressionValidator(textRegex)
+
+        self.lePaterno.setValidator(textValidator)
+        self.leMaterno.setValidator(textValidator)
+        self.leNombres.setValidator(textValidator)
+
+        # Input mask
+        self.leTelefono.setInputMask("999-999-9999")
+
+        # placeholders
+        self.lePaterno.setPlaceholderText("ej. Quiñónez")
+        self.leMaterno.setPlaceholderText("ej. Ramos")
+        self.leNombres.setPlaceholderText("ej. Edgar Felipe")
 
     def validarCampos(self):
         if self.lePaterno.text() == "":
@@ -262,7 +297,10 @@ class FrmAgregar(QDialog):
         }
 
         if success:
-            parent.agregarContacto(formData)
+            # cargar contacto desde clase, ya normalizado?
+            contacto = Contacto(formData)
+
+            parent.agregarContacto(contacto.prettyData())
             self.accept()
 
         else:
