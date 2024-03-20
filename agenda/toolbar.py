@@ -9,15 +9,15 @@ from PySide6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QHBoxLayout,
-    QSizePolicy,
     QTableWidgetItem,
     QMessageBox,
     QDialog,
     QFormLayout,
     QLineEdit,
-    QComboBox,
+    QComboBox
 )
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction
 
 
 class VentanaPrincipal(QMainWindow):
@@ -29,12 +29,18 @@ class VentanaPrincipal(QMainWindow):
         self.setWindowTitle("Agenda")
 
         self.setCentralWidget(centralWidget)
-
+        
+        importAction = QAction("&Importar", self)
+        exportAction = QAction("&Exportar", self)
+        
+        importAction.setShortcut("Ctrl + I")
+        exportAction.setShortcut("Ctrl + E")
+        
         # Components
         menuBar = QMenuBar(self)
         menuItemDatos = QMenu("&Datos")
-        menuItemDatos.addAction("&Importar", self.importarDatos)
-        menuItemDatos.addAction("&Exportar", self.exportarDatos)
+        menuItemDatos.addAction(importAction)
+        menuItemDatos.addAction(exportAction)
         menuItemAyuda = QMenu("&Ayuda")
         menuItemAyuda.addAction("&Acerca de...", self.abrirAcerca)
 
@@ -44,6 +50,7 @@ class VentanaPrincipal(QMainWindow):
         self.setMenuBar(menuBar)
 
     def importarDatos(self):
+        # Como cambiar o agregar mas filtros y que abra un archivo de excel.
         print("Importar")
 
     def exportarDatos(self):
@@ -70,10 +77,6 @@ class Tabla(QWidget):
         addBtn = QPushButton("Añadir")
         self.deleteBtn = QPushButton("Eliminar")
 
-        addBtn.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.deleteBtn.setSizePolicy(
-            QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding
-        )
 
         # Layouts
         mainLayout = QVBoxLayout(self)
@@ -87,27 +90,6 @@ class Tabla(QWidget):
         mainLayout.addLayout(btnLayout)
 
         contactos = [
-            {
-                "paterno": "Quiñónez",
-                "materno": "Ramos",
-                "nombres": "Edgar Felipe",
-                "telefono": "6271094756",
-                "sexo": "M",
-            },
-            {
-                "paterno": "Quiñónez",
-                "materno": "Ramos",
-                "nombres": "Edgar Felipe",
-                "telefono": "6271094756",
-                "sexo": "M",
-            },
-            {
-                "paterno": "Quiñónez",
-                "materno": "Ramos",
-                "nombres": "Edgar Felipe",
-                "telefono": "6271094756",
-                "sexo": "M",
-            },
         ]
 
         self.cargarContactos(contactos)
