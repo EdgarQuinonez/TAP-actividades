@@ -7,10 +7,16 @@ class Contacto:
         self.sexo = formData["sexo"]
 
     def prettyData(self):
+        telefono = self.telefono
+        if len(self.telefono) == 10:
+            telefono = f'{self.telefono[0:3]}-{self.telefono[3:6]}-{self.telefono[6:]}'
+            
+        
+        sexo = 'masculino' if self.sexo == '0' or self.sexo == 'm' else 'femenino'
         prettyData = {
-            "nombreCompleto": f"{self.paterno} {self.materno} {self.nombres}",
-            "telefono": self.telefono,
-            "sexo": self.sexo,
+            "nombreCompleto": f"{self.nombres} {self.paterno} {self.materno}",
+            "telefono": telefono,
+            "sexo": sexo
         }
         return prettyData
 
@@ -20,7 +26,7 @@ class Contacto:
             "materno": self.materno,
             "nombres": self.nombres,
             "telefono": f"{self.telefono[0:3] + self.telefono[3:6] + self.telefono[6:]}",
-            "sexo": "m" if self.sexo == "Masculino" else "f",
+            "sexo": "m" if self.sexo == '0' or self.sexo == "m" else "f",
         }
 
         return normalizedData

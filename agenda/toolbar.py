@@ -15,13 +15,11 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QLineEdit,
     QComboBox,
-    QFileDialog,
-    QAbstractItemView
+    QFileDialog
 )
-from PySide6.QtCore import Qt, QRegularExpression, QMimeData
-from PySide6.QtGui import QRegularExpressionValidator, QAction
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction
 
-from contacto import Contacto
 
 class VentanaPrincipal(QMainWindow):
     def __init__(self, centralWidget):
@@ -32,18 +30,13 @@ class VentanaPrincipal(QMainWindow):
         self.setWindowTitle("Agenda")
 
         self.setCentralWidget(centralWidget)
-        self.setMinimumSize(500, 600)
-
-        # Actions
-
+        
         importAction = QAction("&Importar", self)
-        importAction.setShortcut("Ctrl+I")
-        importAction.triggered.connect(lambda: self.importarDatos(centralWidget))
-
         exportAction = QAction("&Exportar", self)
-        exportAction.setShortcut("Ctrl+E")
-        exportAction.triggered.connect(self.exportarDatos)
-
+        
+        importAction.setShortcut("Ctrl + I")
+        exportAction.setShortcut("Ctrl + E")
+        
         # Components
         menuBar = QMenuBar(self)
         menuItemDatos = QMenu("&Datos")
@@ -57,63 +50,24 @@ class VentanaPrincipal(QMainWindow):
 
         self.setMenuBar(menuBar)
 
-    def importarDatos(self, tablaRef):
+    def importarDatos(self):
+        # Como cambiar o agregar mas filtros y que abra un archivo de excel.
         dialogo = QFileDialog(self)
-        dialogo.setFileMode(QFileDialog.FileMode.ExistingFile)
-        dialogo.setNameFilter("Contactos separados por comas (*.csv)")
-        dialogo.setViewMode(QFileDialog.ViewMode.List)
-
+        dialogo.setViewMode()
+        
         if dialogo.exec():
             archivo = dialogo.selectedFiles()[0]
-            if archivo.endswith(".csv"):
-                self.read_csv(archivo, tablaRef)
-            elif archivo.endswith(".xls") or archivo.endswith(".xlsx"):
-                self.read_excel(archivo)
-            else:
-                QMessageBox.warning(self, "Error", "Unsupported file type.")
+            f = open(archivo, 'r')
+            print(f.readlines())
+            
 
     def exportarDatos(self):
-        pass
+        print("Exportar")
 
     def abrirAcerca(self):
         QMessageBox.information(
             self, "Acerca de", "<p>Hecho por EOBL.</p><p>Materia de TAP.</p>"
         )
-
-    def read_csv(self, archivo, tablaRef):
-        try:
-            with open(archivo, encoding = 'utf-8') as f:
-                while True:
-                    file = f.readline()
-                    
-                    if file == '':
-                        break
-                        
-                    rowItems = file.split(',')
-                    strippedRowItems = [item.strip() for item in rowItems]
-                    dataDict = {
-                        'paterno': strippedRowItems[0],
-                        'materno': strippedRowItems[1],
-                        'nombres': strippedRowItems[2],
-                        'telefono': strippedRowItems[3],
-                        'sexo': strippedRowItems[4],
-                    }
-                    contacto = Contacto(dataDict)
-                    
-                    tablaRef.agregarContacto(contacto.prettyData(), contacto.normalizeData())
-                    
-                    
-        except Exception as e:
-            QMessageBox.warning(self, "Error", f"Error reading CSV: {e}")
-
-    def read_excel(self, archivo):
-        pass
-        # try:
-        #     df = pd.read_excel(archivo)
-        #     for index, row in df.iterrows():
-        #         print(row)  # Process each line here
-        # except Exception as e:
-        #     QMessageBox.warning(self, "Error", f"Error reading Excel: {e}")
 
 
 class Tabla(QWidget):
@@ -131,13 +85,10 @@ class Tabla(QWidget):
         addBtn = QPushButton("Añadir")
         self.deleteBtn = QPushButton("Eliminar")
 
+
         # Layouts
         mainLayout = QVBoxLayout(self)
         mainLayout.addWidget(self.tabla)
-
-        self.tabla.setColumnWidth(0, 240)
-        self.tabla.setColumnWidth(1, 120)
-        self.tabla.setColumnWidth(2, 50)
 
         # Botones layout
         btnLayout = QHBoxLayout()
@@ -145,6 +96,11 @@ class Tabla(QWidget):
         btnLayout.addWidget(self.deleteBtn, alignment=Qt.AlignRight)
 
         mainLayout.addLayout(btnLayout)
+
+        contactos = [
+        ]
+
+        self.cargarContactos(contactos)
 
         # Listeners
         self.tabla.itemDoubleClicked.connect(self.handleCellDoubleClick)
@@ -156,44 +112,44 @@ class Tabla(QWidget):
         self.tabla.setSelectionBehavior(QTableWidget.SelectRows)
         if len(self.tabla.selectedItems()) == 0:
             self.deleteBtn.setDisabled(True)
-            
-        self.tabla.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
-    def agregarContacto(self, formData, fileData):
-        if self.isNonDuplicate(formData):
-            numRows = self.tabla.rowCount()
-            self.tabla.setRowCount(numRows + 1)
+    def agregarContacto(self, formData):
+        numRows = self.tabla.rowCount()
+        self.tabla.setRowCount(numRows + 1)
 
-            self.tabla.setItem(numRows, 0, QTableWidgetItem(formData["nombreCompleto"]))
-            self.tabla.setItem(numRows, 1, QTableWidgetItem(formData["telefono"]))
-            self.tabla.setItem(numRows, 2, QTableWidgetItem(formData["sexo"]))
-            
-            try:
-                
-                with open('contactos_export.csv', "a", encoding = 'utf-8') as f:
-                    f.write(f"{fileData["paterno"]},{fileData["materno"]},{fileData["nombres"]},{fileData["telefono"]},{fileData["sexo"]}\n")
-                        
-                        
-            except Exception as e:
-                QMessageBox.warning(self, "Error", f"Error writting CSV: {e}")
-            
-            
-            
-    def isNonDuplicate(self, dataDict):
-        for row in range(self.tabla.rowCount()):
-            nombreCompletoItem = self.tabla.item(row, 0)
-            if nombreCompletoItem.text() == dataDict["nombreCompleto"]:
-                return False
-        
-        return True
-            
-        
-        
+        nombreCompleto = (
+            f"{formData['nombres']} {formData['paterno']} {formData['materno']}"
+        )
+        print(formData)
+
+        self.tabla.setItem(numRows, 0, QTableWidgetItem(nombreCompleto))
+        self.tabla.setItem(numRows, 1, QTableWidgetItem(formData["telefono"]))
+        self.tabla.setItem(numRows, 2, QTableWidgetItem(formData["sexo"]))
+
     def onAgregarContacto(self):
         form = FrmAgregar(self)
 
         form.open()
 
+    def cargarContactos(self, contactos):
+        numeroContactos = len(contactos)
+        self.tabla.setRowCount(numeroContactos)
+
+        for row, contacto in enumerate(contactos):
+            nombreCompleto = QTableWidgetItem(
+                f"{contacto['nombres']} {contacto['paterno']} {contacto['materno']}"
+            )
+            telefono = QTableWidgetItem(contacto["telefono"])
+            sexo = QTableWidgetItem(contacto["sexo"])
+
+            # disable editing
+            nombreCompleto.setFlags(nombreCompleto.flags() & ~Qt.ItemIsEditable)
+            telefono.setFlags(telefono.flags() & ~Qt.ItemIsEditable)
+            sexo.setFlags(sexo.flags() & ~Qt.ItemIsEditable)
+
+            self.tabla.setItem(row, 0, nombreCompleto)
+            self.tabla.setItem(row, 1, telefono)
+            self.tabla.setItem(row, 2, sexo)
 
     def handleCellDoubleClick(self, item):
 
@@ -220,11 +176,11 @@ class Tabla(QWidget):
 
 
 class FrmAgregar(QDialog):
-    def __init__(self, tablaRef):
+    def __init__(self, parent):
         """
         Constructor
         """
-        super().__init__(tablaRef)
+        super().__init__(parent)
 
         self.setWindowTitle("Agregar contacto")
 
@@ -238,7 +194,7 @@ class FrmAgregar(QDialog):
         self.comboBoxSexo = QComboBox()
         self.comboBoxSexo.addItem("Masculino")
         self.comboBoxSexo.addItem("Femenino")
-        self.comboBoxSexo.setPlaceholderText("--Seleccionar--")
+        self.comboBoxSexo.setPlaceholderText("--Selecionar--")
         self.comboBoxSexo.setCurrentIndex(-1)
 
         self.btnAceptar = QPushButton("Aceptar")
@@ -262,24 +218,8 @@ class FrmAgregar(QDialog):
         mainLayout.addLayout(btnHLayout)
 
         # Listeners
-        self.btnAceptar.clicked.connect(lambda: self.handleAgregar(tablaRef))
+        self.btnAceptar.clicked.connect(lambda: self.handleAgregar(parent))
         self.btnCancelar.clicked.connect(lambda: self.reject())
-
-        # Regex
-        textRegex = QRegularExpression("[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s]+")
-        textValidator = QRegularExpressionValidator(textRegex)
-
-        self.lePaterno.setValidator(textValidator)
-        self.leMaterno.setValidator(textValidator)
-        self.leNombres.setValidator(textValidator)
-
-        # Input mask
-        self.leTelefono.setInputMask("999-999-9999")
-
-        # placeholders
-        self.lePaterno.setPlaceholderText("ej. Quiñónez")
-        self.leMaterno.setPlaceholderText("ej. Ramos")
-        self.leNombres.setPlaceholderText("ej. Edgar Felipe")
 
     def validarCampos(self):
         if self.lePaterno.text() == "":
@@ -295,27 +235,24 @@ class FrmAgregar(QDialog):
         elif self.leTelefono.text() == "":
             self.leTelefono.setFocus()
             return False
-        elif self.comboBoxSexo.currentIndex() == -1:
+        elif self.comboBoxSexo.currentText() == "":
             self.comboBoxSexo.showPopup()
             return False
 
         return True
 
-    def handleAgregar(self, tablaRef):
+    def handleAgregar(self, parent):
         success = self.validarCampos()
         formData = {
             "paterno": self.lePaterno.text(),
             "materno": self.leMaterno.text(),
             "nombres": self.leNombres.text(),
             "telefono": self.leTelefono.text(),
-            "sexo": self.comboBoxSexo.currentIndex(),
+            "sexo": self.comboBoxSexo.currentText(),
         }
 
         if success:
-            # cargar contacto desde clase, ya normalizado?
-            contacto = Contacto(formData)
-
-            tablaRef.agregarContacto(contacto.prettyData(), contacto.normalizeData())
+            parent.agregarContacto(formData)
             self.accept()
 
         else:
