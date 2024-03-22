@@ -42,7 +42,7 @@ class VentanaPrincipal(QMainWindow):
 
         exportAction = QAction("&Exportar", self)
         exportAction.setShortcut("Ctrl+E")
-        exportAction.triggered.connect(self.exportarDatos)
+        exportAction.triggered.connect(lambda: self.exportarDatos(centralWidget))
 
         # Components
         menuBar = QMenuBar(self)
@@ -72,8 +72,16 @@ class VentanaPrincipal(QMainWindow):
             else:
                 QMessageBox.warning(self, "Error", "Unsupported file type.")
 
-    def exportarDatos(self):
-        pass
+    def exportarDatos(self, tablaRef):
+        try:
+                
+            with open('contactos_export.csv', "a", encoding = 'utf-8') as f:
+                for row in range(tablaRef.tabla.rowCount()):
+                    fileData = tablaRef.tabla.item(row, 0).data(Qt.UserRole)
+                    f.write(f"{fileData["paterno"]},{fileData["materno"]},{fileData["nombres"]},{fileData["telefono"]},{fileData["sexo"]}\n")      
+                    
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Error writting CSV: {e}")
 
     def abrirAcerca(self):
         QMessageBox.information(
@@ -163,22 +171,14 @@ class Tabla(QWidget):
         if self.isNonDuplicate(formData):
             numRows = self.tabla.rowCount()
             self.tabla.setRowCount(numRows + 1)
+            
+            itemNombreCompleto = QTableWidgetItem(formData["nombreCompleto"])
+            itemNombreCompleto.setData(Qt.UserRole, fileData)
 
-            self.tabla.setItem(numRows, 0, QTableWidgetItem(formData["nombreCompleto"]))
+            self.tabla.setItem(numRows, 0, itemNombreCompleto)
             self.tabla.setItem(numRows, 1, QTableWidgetItem(formData["telefono"]))
             self.tabla.setItem(numRows, 2, QTableWidgetItem(formData["sexo"]))
-            
-            try:
-                
-                with open('contactos_export.csv', "a", encoding = 'utf-8') as f:
-                    f.write(f"{fileData["paterno"]},{fileData["materno"]},{fileData["nombres"]},{fileData["telefono"]},{fileData["sexo"]}\n")
-                        
-                        
-            except Exception as e:
-                QMessageBox.warning(self, "Error", f"Error writting CSV: {e}")
-            
-            
-            
+             
     def isNonDuplicate(self, dataDict):
         for row in range(self.tabla.rowCount()):
             nombreCompletoItem = self.tabla.item(row, 0)
@@ -186,9 +186,7 @@ class Tabla(QWidget):
                 return False
         
         return True
-            
-        
-        
+             
     def onAgregarContacto(self):
         form = FrmAgregar(self)
 
@@ -196,7 +194,6 @@ class Tabla(QWidget):
 
 
     def handleCellDoubleClick(self, item):
-
         # Imprime contenido de cualquier celda
         # self.tabla.selectRow(item.row())
         # print(item.text())
