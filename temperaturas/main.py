@@ -1,14 +1,17 @@
-# pycountry nombres y codigos
-# geopy coordenadas
-# meteostat obtener datos de temperatura promedio por dia en un intervalo de fechas
-# matplotlib grafica
+# Edgar Felipe Quiñónez Ramos 22410043
+# pycountry: Países y estados. pip install pycountry. https://pypi.org/project/pycountry/
+# meteostat: Obtener datos de temperatura promedio por día en un intervalo de fechas. pip install meteostat. https://dev.meteostat.net/python/
+# matplotlib: Gráfica. pip install matplotlib. https://matplotlib.org/stable/users/installing/index.html
+# World Cities Database: Ciudades (Archivo CSV). https://simplemaps.com/data/world-cities
 
 
 import sys
 import os
 import csv
-from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QComboBox, QHBoxLayout, QLabel, QPushButton, QDateEdit
+from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QComboBox, QHBoxLayout, QLabel, QPushButton, QDateEdit, QMainWindow
 from PySide6.QtCore import QDate
+from PySide6.QtGui import Qt
+
 import pycountry
 from meteostat import Point, Daily
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
@@ -16,7 +19,19 @@ from matplotlib.figure import Figure
 from datetime import datetime
 
 
+class Temperaturas(QMainWindow):
 
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+        
+        self.setCentralWidget(HistoricoTemperatura())
+
+    def initUI(self):
+        self.setWindowTitle("Histórico de Temperaturas")
+        
+        self.showMaximized()
+        self.show()
 
 class HistoricoTemperatura(QWidget):
     """
@@ -28,7 +43,6 @@ class HistoricoTemperatura(QWidget):
         Constructor
         """
         super().__init__()
-        self.setWindowTitle("Histórico de Temperaturas")
         
         self.selectedCountry = None
         self.selectedState = None
@@ -57,17 +71,17 @@ class HistoricoTemperatura(QWidget):
         
         countryRowLayout = QHBoxLayout()
         
-        countryRowLayout.addWidget(QLabel("País"))
+        countryRowLayout.addWidget(QLabel("País"), alignment=Qt.AlignmentFlag.AlignRight)
         countryRowLayout.addWidget(self.countryCB)
         
         stateRowLayout = QHBoxLayout()
         
-        stateRowLayout.addWidget(QLabel("Estado"))
+        stateRowLayout.addWidget(QLabel("Estado"), alignment=Qt.AlignmentFlag.AlignRight)
         stateRowLayout.addWidget(self.stateCB)
         
         cityRowLayout = QHBoxLayout()
         
-        cityRowLayout.addWidget(QLabel("Ciudad"))
+        cityRowLayout.addWidget(QLabel("Ciudad"), alignment=Qt.AlignmentFlag.AlignRight)
         cityRowLayout.addWidget(self.cityCB)
         
         locationVLayout.addLayout(countryRowLayout)
@@ -202,8 +216,8 @@ class HistoricoTemperatura(QWidget):
 # Punto de inicio de ejecución del programa:
 if __name__ == "__main__":
     app = QApplication([])
+    
+    mainWindow = Temperaturas()
 
-    widget = HistoricoTemperatura()
-    widget.show()
 
     sys.exit(app.exec())
