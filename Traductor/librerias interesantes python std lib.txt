@@ -1,0 +1,10 @@
+sqlite3 https://docs.python.org/3/library/sqlite3.html
+random https://docs.python.org/3/library/random.html
+threading https://docs.python.org/3/library/threading.html
+html https://docs.python.org/3/library/html.html
+statistics https://docs.python.org/3/library/statistics.html
+
+--
+turtle https://docs.python.org/3/library/turtle.html
+passlib https://pypi.org/project/passlib/
+secrets https://docs.python.org/3/library/secrets.html#module-secrets
