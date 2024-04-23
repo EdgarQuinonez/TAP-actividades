@@ -8,15 +8,14 @@ class Componente(QWidget):
         
         mainHLayout = QHBoxLayout(self)
         
-        self.value = QLineEdit()
+        self.lineEdit = QLineEdit()
         
-        mainHLayout.addWidget(self.value)
+        mainHLayout.addWidget(self.lineEdit)
         mainHLayout.addWidget(QLabel("*"))
         
-        self.value.focusOutEvent.connect(self.changeStyles)
         
     def checkNotEmpty(self):
-        if self.value.text() != "":
+        if self.lineEdit.text() != "":
             return True
         else:
             return False
@@ -26,15 +25,17 @@ class Componente(QWidget):
         
         if isNotEmpty:
             
-            self.value.setStyleSheet(
+            self.lineEdit.setStyleSheet(
             """
-            border-color: green 
+            border-color: green;
+            background-color: light-green;
             """
             )
         else:
-            self.value.setStyleSheet(
+            self.lineEdit.setStyleSheet(
             """
-            border-color: red 
+            border-color: red;
+            background-color = pink;
             """
             )
             
