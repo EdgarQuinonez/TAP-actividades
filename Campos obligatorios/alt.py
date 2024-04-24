@@ -16,13 +16,25 @@ class PruebaComponente(QWidget):
         super().__init__()
         self.setWindowTitle("Prueba Componente")
         
-        firstComponent = Componente()
-        secondComponent = Componente()
+        self.firstComponent = Componente(specialChar="-")
+        self.secondComponent = Componente()
         
         mainVLayout = QVBoxLayout(self)
         
-        mainVLayout.addWidget(firstComponent)
-        mainVLayout.addWidget(secondComponent)
+        mainVLayout.addWidget(self.firstComponent)
+        mainVLayout.addWidget(self.secondComponent)
+        
+        self.changeComponentSpecialChar(self.secondComponent, "+")
+        self.changeComponentFontScale(self.secondComponent, 5)
+        
+    def changeComponentSpecialChar(self, componentRef, newSpecialChar):
+        componentRef.changeSpecialChar(newSpecialChar)
+        
+    def changeComponentFontScale(self, componentRef, newFontScale):
+        componentRef.changeFontScale(newFontScale)
+        
+        
+        
 
 
 # Punto de inicio de ejecución del programa:
