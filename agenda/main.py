@@ -1,4 +1,4 @@
-import sys
+import sys, os
 from PySide6.QtWidgets import (
     QWidget,
     QApplication,
@@ -16,7 +16,9 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QComboBox,
     QFileDialog,
-    QAbstractItemView
+    QAbstractItemView,
+    QDialogButtonBox,
+    QLabel
 )
 from PySide6.QtCore import Qt, QRegularExpression, QMimeData
 from PySide6.QtGui import QRegularExpressionValidator, QAction
@@ -30,19 +32,23 @@ class VentanaPrincipal(QMainWindow):
         """
         super().__init__()
         self.setWindowTitle("Agenda")
-
-        self.setCentralWidget(centralWidget)
+        self.tablaRef = centralWidget
+        self.setCentralWidget(self.tablaRef)
+        
+        
         self.setMinimumSize(500, 600)
 
         # Actions
 
         importAction = QAction("&Importar", self)
         importAction.setShortcut("Ctrl+I")
-        importAction.triggered.connect(lambda: self.importarDatos(centralWidget))
+        importAction.triggered.connect(lambda: self.importarDatos(self.tablaRef))
 
         exportAction = QAction("&Exportar", self)
         exportAction.setShortcut("Ctrl+E")
-        exportAction.triggered.connect(lambda: self.exportarDatos(centralWidget))
+        exportAction.triggered.connect(lambda: self.tablaRef.onExportar(self))
+        
+
 
         # Components
         menuBar = QMenuBar(self)
@@ -73,12 +79,12 @@ class VentanaPrincipal(QMainWindow):
                 QMessageBox.warning(self, "Error", "Unsupported file type.")
 
     def exportarDatos(self, tablaRef):
-        try:
-                
+        try:                    
+            open('contactos_export.csv', "w").close()        
             with open('contactos_export.csv', "a", encoding = 'utf-8') as f:
                 for row in range(tablaRef.tabla.rowCount()):
-                    fileData = tablaRef.tabla.item(row, 0).data(Qt.UserRole)
-                    f.write(f"{fileData["paterno"]},{fileData["materno"]},{fileData["nombres"]},{fileData["telefono"]},{fileData["sexo"]}\n")      
+                    fileData = tablaRef.tabla.item(row, 0).data(Qt.UserRole)                    
+                    f.write(f"{fileData["paterno"]},{fileData["materno"]},{fileData["nombres"]},{fileData["telefono"]},{fileData["sexo"]}\n")                
                     
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Error writting CSV: {e}")
@@ -91,25 +97,25 @@ class VentanaPrincipal(QMainWindow):
     def read_csv(self, archivo, tablaRef):
         try:
             with open(archivo, encoding = 'utf-8') as f:
-                while True:
-                    file = f.readline()
+                file = f.readlines()
+                contactos = []
+                for row in file:
                     
-                    if file == '':
-                        break
                         
-                    rowItems = file.split(',')
-                    strippedRowItems = [item.strip() for item in rowItems]
-                    dataDict = {
+                    rowItems = row.split(',')        
+                    strippedRowItems = [item.strip() for item in rowItems]                    
+                    
+                    contacto = {
                         'paterno': strippedRowItems[0],
                         'materno': strippedRowItems[1],
                         'nombres': strippedRowItems[2],
                         'telefono': strippedRowItems[3],
                         'sexo': strippedRowItems[4],
                     }
-                    contacto = Contacto(dataDict)
+                    contactos.append(Contacto(contacto)) 
                     
-                    tablaRef.agregarContacto(contacto.prettyData(), contacto.normalizeData())
-                    
+                tablaRef.agregarContactos(contactos)
+                  
                     
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Error reading CSV: {e}")
@@ -138,6 +144,15 @@ class Tabla(QWidget):
         self.tabla.setHorizontalHeaderLabels(["Nombre completo", "Teléfono", "Sexo"])
         addBtn = QPushButton("Añadir")
         self.deleteBtn = QPushButton("Eliminar")
+        
+        # Actions
+        
+        deleteAction = QAction("Eliminar", self)
+        deleteAction.setShortcut("Delete")
+        deleteAction.triggered.connect(self.deleteSelectedRows)
+        
+        self.deleteBtn.addAction(deleteAction)
+       
 
         # Layouts
         mainLayout = QVBoxLayout(self)
@@ -167,30 +182,54 @@ class Tabla(QWidget):
             
         self.tabla.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
-    def agregarContacto(self, formData, fileData):
-        if self.isNonDuplicate(formData):
-            numRows = self.tabla.rowCount()
-            self.tabla.setRowCount(numRows + 1)
-            
-            itemNombreCompleto = QTableWidgetItem(formData["nombreCompleto"])
-            itemNombreCompleto.setData(Qt.UserRole, fileData)
-
-            self.tabla.setItem(numRows, 0, itemNombreCompleto)
-            self.tabla.setItem(numRows, 1, QTableWidgetItem(formData["telefono"]))
-            self.tabla.setItem(numRows, 2, QTableWidgetItem(formData["sexo"]))
-             
-    def isNonDuplicate(self, dataDict):
-        for row in range(self.tabla.rowCount()):
-            nombreCompletoItem = self.tabla.item(row, 0)
-            if nombreCompletoItem.text() == dataDict["nombreCompleto"]:
-                return False
+    def agregarContactos(self, contactos):
         
+        filteredContactos = [contacto for contacto in contactos if self.isNonDuplicate(contacto)]        
+        duplicatesCount = len(contactos) - len(filteredContactos)
+        
+        if duplicatesCount == 0:
+            numRows = self.tabla.rowCount()
+            self.tabla.setRowCount(numRows + len(filteredContactos))
+            
+            for contacto in filteredContactos:
+                formData = contacto.prettyData()
+                fileData = contacto.normalizeData()
+                
+                
+                itemNombreCompleto = QTableWidgetItem(formData["nombreCompleto"])
+                itemNombreCompleto.setData(Qt.UserRole, fileData)
+
+                self.tabla.setItem(numRows, 0, itemNombreCompleto)
+                self.tabla.setItem(numRows, 1, QTableWidgetItem(formData["telefono"]))
+                self.tabla.setItem(numRows, 2, QTableWidgetItem(formData["sexo"]))
+                self.tabla.selectRow(itemNombreCompleto.row())                    
+                
+                numRows += 1            
+                
+            self.tabla.sortByColumn(0, Qt.SortOrder.AscendingOrder)            
+            
+        else:            
+            QMessageBox.warning(self, f"{duplicatesCount} Elemento(s) duplicados no agregados", f"No se pudieron agregar {duplicatesCount} elementos duplicados. Ya existe un contacto con el mismo nombre.")
+                
+             
+    def isNonDuplicate(self, contacto):
+        formData = contacto.prettyData()
+        for row in range(self.tabla.rowCount()):            
+            nombreCompletoItem = self.tabla.item(row, 0)
+            if nombreCompletoItem.text() == formData["nombreCompleto"]:
+                return False                    
         return True
              
     def onAgregarContacto(self):
         form = FrmAgregar(self)
-
         form.open()
+        
+    def onExportar(self, parent):
+        dialog = ExportDialog(self)
+        if dialog.exec():
+           parent.exportarDatos(self)
+    
+        
 
 
     def handleCellDoubleClick(self, item):
@@ -310,15 +349,37 @@ class FrmAgregar(QDialog):
 
         if success:
             # cargar contacto desde clase, ya normalizado?
-            contacto = Contacto(formData)
-
-            tablaRef.agregarContacto(contacto.prettyData(), contacto.normalizeData())
+            contacto = [Contacto(formData)]
+            tablaRef.agregarContactos(contacto)
             self.accept()
 
         else:
             QMessageBox.critical(
                 self, "Error al enviar el formulario", "Rellena todos los campos"
             )
+            
+            
+class ExportDialog(QDialog):
+   def __init__(self, parent=None):
+       super().__init__(parent)
+
+       self.setWindowTitle("My Dialog")
+
+       # Add more dialog content as needed (labels, text fields, etc.)
+
+       button_box = QDialogButtonBox(
+           QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+           Qt.Horizontal,
+           self,
+       )
+       button_box.accepted.connect(self.accept)
+       button_box.rejected.connect(self.reject)
+
+       main_layout = QVBoxLayout()
+       textLbl = QLabel("¿Deseas exportar el archivo (.csv)?")
+       main_layout.addWidget(textLbl)
+       main_layout.addWidget(button_box)
+       self.setLayout(main_layout)
 
 
 # Punto de inicio de ejecución del programa:

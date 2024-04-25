@@ -1,69 +1,69 @@
-from PySide6.QtGui import QFocusEvent, QFont
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QLabel
-from PySide6.QtCore import Qt, Signal
+import sys
+from PySide6.QtWidgets import QWidget, QApplication, QFormLayout, QPushButton
+from alt import Componente
 
-class RequiredLineEdit(QLineEdit):
-    focusOut = Signal(name="focusOut")
+
+
+class PruebaComponente(QWidget):
+    """
+
+    """
+
     def __init__(self):
+        """
+        Constructor
+        """
         super().__init__()
-    
+        self.setWindowTitle("Prueba Componente")
+        
+        self.firstComponent = Componente(placeholderText="Nombres")
+        self.secondComponent = Componente(fontSizeBase=20, fontFamilyName="Times New Roman", fontSizeScale=1.7, placeholderText="Apellidos")
+        self.acceptBtn = QPushButton("&Aceptar")
         
         
-    def focusOutEvent(self, event: QFocusEvent) -> None:
-        self.focusOut.emit()
-        super().focusOutEvent(event)
+        mainFormLayout = QFormLayout(self)
         
-    
+        mainFormLayout.addRow("&Nombres:", self.firstComponent)
+        mainFormLayout.addRow("&Apellidos:", self.secondComponent)
+        mainFormLayout.addWidget(self.acceptBtn)
+        
+        # Listeners
+        self.acceptBtn.clicked.connect(self.handleAcceptButtonClick)
+        
+    # Cambiar propiedades después de su construcción
+    def changeComponentSpecialChar(self, componentRef, newSpecialChar):
+        componentRef.changeSpecialChar(newSpecialChar)
+        
+    def changeComponentFontScale(self, componentRef, newFontScale):
+        componentRef.changeFontScale(newFontScale)
+        
+    def changeComponentPlaceholderText(self, componentRef, newPlaceholderText):
+        componentRef.changePlaceholderText(newPlaceholderText)
+        
+    def focusInvalidField(self, componentRef):
+        componentRef.setFocusOnInvalid()        
+        return
+        
+    def handleAcceptButtonClick(self):
+        if not self.firstComponent.checkNotEmpty():            
+            self.focusInvalidField(self.firstComponent)
+        elif not self.secondComponent.checkNotEmpty():
+            self.focusInvalidField(self.secondComponent)
+        else:
+            self.close()
+            app.quit()
+        
+        
+        
         
         
 
-class Componente(QWidget):
-    # Es un campo obligatorio. Checar estado focus. Si entro y coloco texto, se pone verde el borde y el *. Si entra y no pone nada, se pone rojo.
-    # css en pyside6?
-    def __init__(self, specialChar="*", fontSizeBase=16, fontSizeScale=1.5):
-        super().__init__()
-        
-        mainHLayout = QHBoxLayout(self)
-        
-        # self.editWithNoChanges = Signal()
-        
-        
-        self.__lineEdit = RequiredLineEdit()
-        self.__specialChar = QLabel(specialChar)
-        
-        # Set fonts
-        self.lineEditFont = QFont("Arial")
-        self.lineEditFont.setPointSize(fontSizeBase)
-        self.labelFont = QFont("Arial")
-        self.labelFont.setPointSize(fontSizeBase * fontSizeScale)
-        
-        self.__lineEdit.setFont(self.lineEditFont)
-        self.__specialChar.setFont(self.labelFont)
-        
-        mainHLayout.addWidget(self.__lineEdit)
-        mainHLayout.addWidget(self.__specialChar)
-        
-        self.__lineEdit.setFocusPolicy(Qt.TabFocus | Qt.ClickFocus)
-        self.__lineEdit.focusOut.connect(self.changeStyles)
-        
-    def changeSpecialChar(self, newSpecialChar: str):
-        self.__specialChar.setText((newSpecialChar))
-        
-    def changeFontScale(self, newFontScale):
-        self.labelFont.setPointSize(self.lineEditFont.pointSize() * newFontScale)
-        self.__specialChar.setFont(self.labelFont)
-        
-    def checkNotEmpty(self):
-        if self.__lineEdit.text() != "":
-            return True
-        else:
-            return False
-        
-    def changeStyles(self):
-        isNotEmpty = self.checkNotEmpty()
-        
-        if isNotEmpty:
-            self.__lineEdit.setStyleSheet("background-color: #66FF99; border: 1px solid green")
-        else:
-            self.__lineEdit.setStyleSheet("background-color: #FFCCCB; border: 1px solid red")
-        
+
+# Punto de inicio de ejecución del programa:
+if __name__ == "__main__":
+    app = QApplication([])
+
+    widget = PruebaComponente()
+    widget.show()
+
+    sys.exit(app.exec())

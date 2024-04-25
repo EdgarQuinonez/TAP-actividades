@@ -3,8 +3,8 @@ class Contacto:
         self.paterno = formData["paterno"]
         self.materno = formData["materno"]
         self.nombres = formData["nombres"]
-        self.telefono = formData["telefono"]
-        self.sexo = formData["sexo"]
+        self.telefono = f"{formData["telefono"][0:3] + formData["telefono"][3:6] + formData["telefono"][6:]}"
+        self.sexo = "m" if formData["sexo"] == "0" or formData["sexo"] == "m" else "f"
 
     def prettyData(self):
         telefono = self.telefono
@@ -19,14 +19,12 @@ class Contacto:
             "sexo": sexo
         }
         return prettyData
-
+    
     def normalizeData(self):
-        normalizedData = {
+        return {
             "paterno": self.paterno,
             "materno": self.materno,
             "nombres": self.nombres,
-            "telefono": f"{self.telefono[0:3] + self.telefono[3:6] + self.telefono[6:]}",
-            "sexo": "m" if self.sexo == '0' or self.sexo == "m" else "f",
+            "telefono": self.telefono,
+            "sexo": self.sexo
         }
-
-        return normalizedData

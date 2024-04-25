@@ -1,47 +1,76 @@
-import sys
-from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout
-from main import Componente
+from PySide6.QtGui import QFocusEvent, QFont
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QLabel
+from PySide6.QtCore import Qt, Signal
 
-
-
-class PruebaComponente(QWidget):
-    """
-
-    """
-
+class RequiredLineEdit(QLineEdit):
+    focusOut = Signal(name="focusOut")
     def __init__(self):
-        """
-        Constructor
-        """
         super().__init__()
-        self.setWindowTitle("Prueba Componente")
         
-        self.firstComponent = Componente(specialChar="-")
-        self.secondComponent = Componente()
-        
-        mainVLayout = QVBoxLayout(self)
-        
-        mainVLayout.addWidget(self.firstComponent)
-        mainVLayout.addWidget(self.secondComponent)
-        
-        self.changeComponentSpecialChar(self.secondComponent, "+")
-        self.changeComponentFontScale(self.secondComponent, 5)
-        
-    def changeComponentSpecialChar(self, componentRef, newSpecialChar):
-        componentRef.changeSpecialChar(newSpecialChar)
-        
-    def changeComponentFontScale(self, componentRef, newFontScale):
-        componentRef.changeFontScale(newFontScale)
-        
-        
+    def focusOutEvent(self, event: QFocusEvent) -> None:
+        self.focusOut.emit()
+        super().focusOutEvent(event)
         
 
+class Componente(QWidget):
+    def __init__(self, placeholderText="", specialChar="*", fontFamilyName="Arial", fontSizeBase=16, fontSizeScale=1.5):
+        super().__init__()
+        
+        mainHLayout = QHBoxLayout(self)
 
-# Punto de inicio de ejecución del programa:
-if __name__ == "__main__":
-    app = QApplication([])
-
-    widget = PruebaComponente()
-    widget.show()
-
-    sys.exit(app.exec())
+        self.__lineEdit = RequiredLineEdit()
+        self.__specialChar = QLabel(specialChar)
+        
+        # Set fonts
+        self.lineEditFont = QFont(fontFamilyName)
+        self.lineEditFont.setPointSize(fontSizeBase)
+        self.labelFont = QFont(fontFamilyName)
+        self.labelFont.setPointSize(fontSizeBase * fontSizeScale)
+        
+        self.__lineEdit.setFont(self.lineEditFont)
+        self.__specialChar.setFont(self.labelFont)
+        
+        # Layout
+        mainHLayout.addWidget(self.__lineEdit)
+        mainHLayout.addWidget(self.__specialChar)
+        
+        self.__lineEdit.setFocusPolicy(Qt.TabFocus | Qt.ClickFocus)
+        
+        # lineEdit placeholder
+        self.__lineEdit.setPlaceholderText(placeholderText)
+        
+        # Listeners
+        self.__lineEdit.focusOut.connect(self.changeStyles)
+        # Evaluación inicial
+        self.changeStyles()
+        
+    def changeSpecialChar(self, newSpecialChar: str):
+        self.__specialChar.setText((newSpecialChar))
+        
+    def changeFontScale(self, newFontScale):
+        self.labelFont.setPointSize(self.lineEditFont.pointSize() * newFontScale)
+        self.__specialChar.setFont(self.labelFont)
+    
+    def changePlaceholderText(self, newPlaceholderText):        
+        self.__lineEdit.setPlaceholderText(newPlaceholderText)
+    
+    # Conocer estado del componente
+    def checkNotEmpty(self):
+        if self.__lineEdit.text().strip() != "":
+            return True
+        else:
+            return False
+        
+    def setFocusOnInvalid(self):
+        if self.checkNotEmpty() == False:            
+            self.__lineEdit.setFocus()
+        
+    def changeStyles(self):
+        isNotEmpty = self.checkNotEmpty()
+        
+        if isNotEmpty:
+            self.__lineEdit.setStyleSheet("background-color: #66FF99; border: 1px solid green")
+            self.__specialChar.setStyleSheet("color: green")
+        else:
+            self.__lineEdit.setStyleSheet("background-color: #FFCCCB; border: 1px solid red")
+            self.__specialChar.setStyleSheet("color: red")
